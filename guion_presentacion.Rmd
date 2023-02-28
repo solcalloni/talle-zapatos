@@ -1,0 +1,140 @@
+---
+title: "Guion presentación"
+output: html_notebook
+---
+
+--
+
+- 1 y 5 -> mica
+- 3 y 4 -> sol
+- 2 y 6 -> guido
+
+---
+# Diapo 1
+
+Todos los datos elegidos los pasamos a cm o, en el caso del peso, a kg.
+
+Mientras estabamos estudiando el dataset se nos ocurrió el armar el siguiente gráfico:
+
+```{r}
+plot3d(WEIGHT~AGE+STATURE, data=datos, col = col_sex[datos$SEX], zlab = 'Peso', xlab = 'Edad', ylab = 'Estatura')
+rglwidget()
+```
+
+En el caso del peso, se puede observar que crece en función de la edad de manera similar en ambos sexos hasta llegar a los 15 años aproximadamente. A partir de allí, se nota un comportamiento distinto entre ambos sexos, el peso de los hombres creciendo más rápidamente que el de las mujeres. La estatura tiene un comportamiento similar, creciendo de igual manera para ambos sexos hasta llegar a los 15 años. Luego se bifurcan y los hombres continúan creciendo un poco más, mientras que las mujeres se 'estancan' en su mayoría en 160 cm aproximadamente. 
+
+Por otro lado, la relación entre la estatura y el peso se comporta de manera diferente. Por más que hay una división según sexo, el crecimiento parecería ser logarítmico en el eje del peso. 
+
+---
+
+# Diapo 2
+
+```{r}
+plot(WEIGHT ~ AGE, datos, col = col_sex[datos$SEX], pch = 4, xlab = 'Edad', ylab = 'Peso', main = 'Peso en función de la edad con modelos')
+legend('bottomright', legend = levels(datos$SEX), col = col_sex, pch = 4)
+abline(modelo_edadf, col = '#6F00E6', lwd=2)
+abline(modelo_edadm, lwd=2)
+lines(1:20, predict(modelo_edadf2, newdata = data.frame('AGE' = 1:20)), col = '#6F00E6', lwd=2, lty=2)
+lines(1:20, predict(modelo_edadm2, newdata = data.frame('AGE' = 1:20)), lwd=2, lty=2)
+legend('topleft', legend= c('masculino lineal','femenino lineal', 'masculino cuadrático', 'femenino cuadrático'), col = c('black', '#6F00E6', 'black', '#6F00E6'), lty = c(1, 1, 2, 2), lwd = 3)
+```
+Decidimos ver si podíamos predecir el peso en función de la edad. Para esto planteamos un modelo lineal y otro cuadrático para cada sexo. Nos pareció interesante hacer ambos tipos de modelo ya que se nota que el comportamiento no es exactamente lineal, aunque sea para el sexo masculino. Se puede observar que casi no hay diferencia entre el modelo lineal y cuadrático del sexo femenino, posicionándose casi uno encima del otro, mientras que para el masculino hay mayor diferencia. 
+
+Calculamos después los errores de predicción y de ajuste para cada modelo, que son en general bastante bajos (entre 0.13 y 0.15). En el caso del sexo femenino, ambos modelos dan prácticamente el mismo resultado, lo cual es coherente con el gráfico. Sin embargo, sí se observa una diferencia en el caso del sexo masculino, el modelo cuadrático ajusta mejor que el lineal.
+
+--- 
+# Diapo 3
+
+# Contexto
+
+Nuestro análisis se centro en el talle de zapatos. Comenzamos por agregar una nueva columna que contenga esta información, lo calculamos a partir de la longitud del pie utilizando la siguiente formula, guiandonos por los talles de adidas ya que varía mucho entre las distintas marcas: (longitudDelPie + 2*0.667) / 0.667 
+
+Las variables que seleccionamos son: (acompañado con señales)
+
+- ELBOW.HAND.LENGTH
+- HEAD.BREATH 
+- FOOT.LENGTH
+- FOOT.BREATH
+- SPHYRION.HEIGHT
+
+# Gráfico
+
+Este primer gráfico muestra el talle en función de la estatura (en cm) y edad (en años), acompañado de colores que nos indican el sexo masculino (verde) y femenino (rosa).
+
+En primera instancia pudimos observar que el talle de las personas crece en función de la estatura y edad de manera lineal, como se podría esperar. Además, notamos que las mujeras dejan de crecer antes que los hombres y el máximo de su talle y estatura resulta siendo menor. También se ve que los talles son discretos y están en líneas horizontales.
+
+```{r}
+plot3d(TALLE~STATURE+AGE, col= col_sex[datos[, 'SEX']], xlab = 'Estatura (cm)', ylab = 'Edad', zlab = 'Talle')
+rglwidget()
+```
+
+---
+
+# Diapo 4
+
+# Modelos de talle en base a elbow.hand.length
+
+Para la siguiente sección del TP buscamos parámetros para predecir el talle. Luego de probar muchos modelos, nos encontramos con el mejor es el que considera ELBOW.HAND.LENGTH. Para que se den una idea el error de predicción utilizando validación cruzada es de 0.02.
+
+En el siguiente gráfico presentamos el talle en función de ELBOW.HAND.LENGTH junto con el modelo planteado en rojo.
+
+```{r}
+modelo_elbow <- lm(TALLE ~ ELBOW.HAND.LENGTH, data = datos)
+
+plot(TALLE ~ ELBOW.HAND.LENGTH, datos, main = 'Modelo TALLE~ELBOW.HAND.LENGTH', xlab = 'Talle', ylab = 'Codo a manos')
+abline(modelo_elbow, col = 'red', lwd = 2)
+```
+Se puede ver una clara relación lineal. Lo sorprendente es la poca variación que hay dada una longitud de ELBOW.HAND.LENGTH. Sin embargo, no pasa lo mismo con todas las partes del cuerpo. Para ver esto con más detalle comparemos este con distintos modelos.
+
+---
+
+# Diapo 5
+
+# Los 3 juntos
+
+```{r}
+par(mfrow = c(1,3))
+
+plot(predict(modelo_elbow) ~ TALLE, datos[!is.na(datos$TALLE) & !is.na(datos$ELBOW.HAND.LENGTH),],xlab = 'Talle observado', ylab = 'Talle predicho', ylim = c(20, 50), main = 'ELBOW.HAND.LENGTH')
+abline(0, 1, col = 'red', lwd = 2)
+plot(predict(modelo_head) ~ TALLE, datos[!is.na(datos$TALLE) & !is.na(datos$HEAD.BREADTH),],xlab = 'Talle observado', ylab = 'Talle predicho', ylim = c(20, 50), main = 'HEAD.BREADTH')
+abline(0, 1, col = 'red', lwd = 2)
+plot(predict(modelo_hae) ~ TALLE, datos[!is.na(datos$TALLE) & !is.na(datos$HEAD.BREADTH) & !is.na(datos$ELBOW.HAND.LENGTH),],xlab = 'Talle observado', ylab = 'Talle predicho', ylim = c(20, 50), main = 'HEAD.BREADTH + ELBOW.HAND.LENGTH')
+abline(0, 1, col = 'red', lwd = 2)
+```
+
+Como vimos que ELBOW.HAND.LENGTH es una medida del cuerpo completamente diferente de los pies (no tienen relación alguna), buscamos otras variables para ver si obteniamos resultamos similares. Sin embargo, esto no ocurrió pero traemos un modelo que considere HEAD.BREADTH para tenerlo como punto de comparación.
+
+En el eje x está el talle observado y en el y está el predicho por el parámetro del título, la línea roja se corresponde con la identidad, el modelo perfecto tendría todos los puntos sobre ella.
+
+El primer y último modelo son bastante buenos, lo interesante es ver que el último proviene de juntar ELBOW.HAND.LENGTH con HEAD.BREADTH, ya que esta última por si sola da resultado bastante malos. La predicción conseguida a partir del primer modelo no mejora.
+
+---
+
+# Diapo 6
+
+# ¿Hay una forma mejor de modelar el pie?
+
+Despues de buscar distintas maneras de modelar el pie, nos surgió la duda de si hay otros parámetros que se podrían tener en cuenta al momento de establecer un talle.
+
+Para ver esto tuvimos en cuenta otras medidas del pie, como lo son el alto del talón y el ancho del pie. Los graficamos en función del largo del pie.
+
+```{r}
+plot3d(SPHYRION.HEIGHT~FOOT.LENGTH+FOOT.BREADTH, data = datos, zlab = 'Altura del empeine', xlab = 'Largo del pie', ylab = 'Ancho del pie')
+rglwidget()
+```
+
+Observemos que el largo y ancho del pie se relacionan linealmente, a medida que aumenta el largo del pie también lo hace el ancho. Por otro lado, al estudiar los datos, pudimos ver que no hay una gran variación en el ancho del pie dentro de un mismo talle de zapatos, el desvío estandar promedio es de 0.43 cm.
+
+Sin embargo la altura del empiene no tiene relación alguna con estas variables. Para darnos una idea, su desvación estandar promedio es de 0.82 cm, lo cual al estar hablando del empeine, genera una gran diferencia. En el gráfico se ve una nube, es decir no resulta fácil establecer talles que tomen en cuenta esta última variable. Tal vez podría hacerse con el costo de perder exactitud en relación a la longitud del pie, lo cual sabemos que es importante tenerlo en cuenta.
+
+---
+# Conclusión
+
+(...)
+
+En la primera parte del informe nos dedicamos a entender un poco a aquellas variables con las cuales ibamos a trabajar. Al observar la variable raza podemos inferir que no tiene un peso significativo al momento de realizar nuestros análisis, el crecimiento de un niño no está definido por la raza pero sí influye el sexo. Es muy notorio que en todas las variables el sexo femenino llega un un valor máximo menor al sexo masculino, esto depende siempre de la edad. Además, se nota una diferencia en el aumento del peso en función de la edad, en el sexo masculino a partir de cierta edad comienza a tener un ritmo mas acelerado, mientras que en el caso del sexo femenino es constante. Una linea de trabajo interesante podría haber sido el análisis de los efectos de la pubertad en ambos sexos, cuándo se produce un cambio en el ritmo de crecimiento.
+
+A diferencia de otras medidas de partes del cuerpo separadas, ELBOW.HAND.LENGTH es un excelente predictor del talle, no es el caso con SPHYRION.HEIGHT que varía mucho según el pie y no está contemplado al momento de definir el talle. Por lo tanto, es muy probable que si tenés un empeine de longitud mayor al establecido en base a la longitud del pie, tenga que usar un talle mayor. Este mismo problema se le puede presentar a la gente que usa plantillas. Sin embargo, un esquema de talles más preciso requeriría más parámetros y complejizaría la producción de calzado.
+
+
